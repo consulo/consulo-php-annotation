@@ -7,8 +7,7 @@ import com.jetbrains.php.lang.psi.elements.StringLiteralExpression;
 import de.espend.idea.php.annotation.pattern.AnnotationPattern;
 import de.espend.idea.php.annotation.util.AnnotationUtil;
 import de.espend.idea.php.annotation.util.PhpElementsUtil;
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
+import org.jspecify.annotations.Nullable;
 
 /**
  * @author Daniel Espendiller <daniel@espendiller.net>
@@ -18,17 +17,15 @@ public class PhpDocTagAnnotation {
     final private PhpClass phpClass;
     final private PhpDocTag phpDocTag;
 
-    public PhpDocTagAnnotation(@NotNull PhpClass phpClass, @NotNull PhpDocTag phpDocTag) {
+    public PhpDocTagAnnotation(PhpClass phpClass, PhpDocTag phpDocTag) {
         this.phpClass = phpClass;
         this.phpDocTag = phpDocTag;
     }
 
-    @NotNull
     public PhpClass getPhpClass() {
         return phpClass;
     }
 
-    @NotNull
     public PhpDocTag getPhpDocTag() {
         return phpDocTag;
     }
@@ -40,7 +37,7 @@ public class PhpDocTagAnnotation {
      * @return Property value
      */
     @Nullable
-    public String getPropertyValue(@NotNull String propertyName) {
+    public String getPropertyValue(String propertyName) {
         return AnnotationUtil.getPropertyValue(phpDocTag, propertyName);
     }
 
@@ -51,7 +48,7 @@ public class PhpDocTagAnnotation {
      * @return Property value
      */
     @Nullable
-    public StringLiteralExpression getPropertyValuePsi(@NotNull String propertyName) {
+    public StringLiteralExpression getPropertyValuePsi(String propertyName) {
         PhpPsiElement docAttrList = phpDocTag.getFirstPsiChild();
         if(docAttrList != null) {
             return PhpElementsUtil.getChildrenOnPatternMatch(docAttrList, AnnotationPattern.getPropertyIdentifierValue(propertyName));

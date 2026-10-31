@@ -1,8 +1,8 @@
 package de.espend.idea.php.annotation.util;
 
-import com.intellij.openapi.util.Pair;
-import com.intellij.psi.PsiElement;
-import com.intellij.util.Processor;
+import consulo.util.lang.Pair;
+import consulo.language.psi.PsiElement;
+import consulo.application.util.function.Processor;
 import com.jetbrains.php.lang.documentation.phpdoc.PhpDocUtil;
 import com.jetbrains.php.lang.documentation.phpdoc.psi.PhpDocComment;
 import com.jetbrains.php.lang.documentation.phpdoc.psi.tags.PhpDocTag;
@@ -11,8 +11,7 @@ import com.jetbrains.php.lang.psi.elements.PhpAttribute;
 import com.jetbrains.php.lang.psi.elements.PhpClass;
 import com.jetbrains.php.lang.psi.elements.PhpNamedElement;
 import org.apache.commons.lang3.StringUtils;
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
+import org.jspecify.annotations.Nullable;
 
 import java.util.Map;
 
@@ -20,7 +19,7 @@ import java.util.Map;
  * @author Daniel Espendiller <daniel@espendiller.net>
  */
 public class PhpDocTagAnnotationVisitorUtil {
-    public static void visitElement(@NotNull PhpFile psiFile, @NotNull Processor<Pair<String, PsiElement>> processor) {
+    public static void visitElement(PhpFile psiFile, Processor<Pair<String, PsiElement>> processor) {
         for (PhpNamedElement topLevelElement : psiFile.getTopLevelDefs().values()) {
             if (topLevelElement instanceof PhpClass clazz) {
                 PhpDocComment docComment = clazz.getDocComment();
@@ -38,7 +37,7 @@ public class PhpDocTagAnnotationVisitorUtil {
         }
     }
 
-    private static void visitPhpDocTag(@NotNull PhpDocTag phpDocTag, @NotNull Processor<Pair<String, PsiElement>> processor) {
+    private static void visitPhpDocTag(PhpDocTag phpDocTag, Processor<Pair<String, PsiElement>> processor) {
         // "@var" and user non-related tags don't need an action
         String name = phpDocTag.getName();
         if (AnnotationUtil.isBlockedAnnotationTag(name)) {
@@ -53,7 +52,7 @@ public class PhpDocTagAnnotationVisitorUtil {
     }
 
     @Nullable
-    private static String getClassNameReference(@NotNull PhpDocTag phpDocTag, @NotNull Map<String, String> useImports) {
+    private static String getClassNameReference(PhpDocTag phpDocTag, Map<String, String> useImports) {
 
         if(useImports.isEmpty()) {
             return null;

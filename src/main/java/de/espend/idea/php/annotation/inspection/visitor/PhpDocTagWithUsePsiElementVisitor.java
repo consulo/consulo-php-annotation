@@ -1,33 +1,30 @@
 package de.espend.idea.php.annotation.inspection.visitor;
 
-import com.intellij.codeInspection.ProblemsHolder;
-import com.intellij.psi.PsiElement;
-import com.intellij.psi.PsiElementVisitor;
+import consulo.language.editor.inspection.ProblemsHolder;
+import consulo.language.psi.PsiElement;
+import consulo.language.psi.PsiElementVisitor;
 import com.jetbrains.php.lang.documentation.phpdoc.PhpDocUtil;
 import com.jetbrains.php.lang.documentation.phpdoc.psi.PhpDocComment;
 import com.jetbrains.php.lang.documentation.phpdoc.psi.tags.PhpDocTag;
 import de.espend.idea.php.annotation.inspection.AnnotationInspectionUtil;
 import de.espend.idea.php.annotation.util.AnnotationUtil;
 import org.apache.commons.lang3.StringUtils;
-import org.jetbrains.annotations.NotNull;
 
 import java.util.Collection;
 import java.util.HashSet;
 
 public class PhpDocTagWithUsePsiElementVisitor extends PsiElementVisitor {
-    @NotNull
     private final ProblemsHolder holder;
 
-    @NotNull
     private final PhpDocTagWithUsePsiElementVisitor.DocWithUsePsiPsiElementVisitor visitor;
 
-    public PhpDocTagWithUsePsiElementVisitor(@NotNull ProblemsHolder holder, @NotNull PhpDocTagWithUsePsiElementVisitor.DocWithUsePsiPsiElementVisitor visitor) {
+    public PhpDocTagWithUsePsiElementVisitor(ProblemsHolder holder, PhpDocTagWithUsePsiElementVisitor.DocWithUsePsiPsiElementVisitor visitor) {
         this.holder = holder;
         this.visitor = visitor;
     }
 
     @Override
-    public void visitElement(@NotNull PsiElement element) {
+    public void visitElement(PsiElement element) {
         if(element instanceof PhpDocComment) {
             Collection<PhpDocTag> phpDocTags = new HashSet<>();
 
@@ -54,6 +51,6 @@ public class PhpDocTagWithUsePsiElementVisitor extends PsiElementVisitor {
     }
 
     public interface DocWithUsePsiPsiElementVisitor {
-        void visitElement(@NotNull PhpDocTag phpDocTag, @NotNull ProblemsHolder holder, @NotNull AnnotationInspectionUtil.LazyNamespaceImportResolver lazyNamespaceImportResolver);
+        void visitElement(PhpDocTag phpDocTag, ProblemsHolder holder, AnnotationInspectionUtil.LazyNamespaceImportResolver lazyNamespaceImportResolver);
     }
 }

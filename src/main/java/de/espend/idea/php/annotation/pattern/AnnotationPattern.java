@@ -1,12 +1,12 @@
 package de.espend.idea.php.annotation.pattern;
 
-import com.intellij.patterns.ElementPattern;
-import com.intellij.patterns.PatternCondition;
-import com.intellij.patterns.PlatformPatterns;
-import com.intellij.patterns.PsiElementPattern;
-import com.intellij.psi.PsiElement;
-import com.intellij.psi.PsiWhiteSpace;
-import com.intellij.util.ProcessingContext;
+import consulo.language.pattern.ElementPattern;
+import consulo.language.pattern.PatternCondition;
+import consulo.language.pattern.PlatformPatterns;
+import consulo.language.pattern.PsiElementPattern;
+import consulo.language.psi.PsiElement;
+import consulo.language.psi.PsiWhiteSpace;
+import consulo.language.util.ProcessingContext;
 import com.jetbrains.php.lang.PhpLanguage;
 import com.jetbrains.php.lang.documentation.phpdoc.lexer.PhpDocTokenTypes;
 import com.jetbrains.php.lang.documentation.phpdoc.parser.PhpDocElementTypes;
@@ -16,7 +16,6 @@ import com.jetbrains.php.lang.documentation.phpdoc.psi.PhpDocPsiElement;
 import com.jetbrains.php.lang.lexer.PhpTokenTypes;
 import com.jetbrains.php.lang.psi.elements.*;
 import org.apache.commons.lang3.StringUtils;
-import org.jetbrains.annotations.NotNull;
 
 /**
  * @author Daniel Espendiller <daniel@espendiller.net>
@@ -68,7 +67,7 @@ public class AnnotationPattern {
                     PlatformPatterns.psiElement(PsiWhiteSpace.class),
                     PlatformPatterns.psiElement(PhpDocTokenTypes.DOC_TEXT).with(new PatternCondition<>("Whitespace fix") {
                         @Override
-                        public boolean accepts(@NotNull PsiElement psiElement, ProcessingContext processingContext) {
+                        public boolean accepts(PsiElement psiElement, ProcessingContext processingContext) {
                             // nested issue
                             return StringUtils.isBlank(psiElement.getText());
                         }
@@ -161,7 +160,7 @@ public class AnnotationPattern {
 
     private static final PatternCondition<PsiElement> WHITE_SPACE_AS_TEXT_CONDITION = new PatternCondition<PsiElement>("Whitespace as DOC_TEXT fix") {
         @Override
-        public boolean accepts(@NotNull PsiElement psiElement, ProcessingContext processingContext) {
+        public boolean accepts(PsiElement psiElement, ProcessingContext processingContext) {
             return psiElement.getNode().getElementType() == PhpDocTokenTypes.DOC_TEXT && StringUtils.isBlank(psiElement.getText());
         }
     };
@@ -212,7 +211,7 @@ public class AnnotationPattern {
     private static final PsiElementPattern.Capture<StringLiteralExpression> ATTRIBUTES_DEFAULT_PATTERN =
         PlatformPatterns.psiElement(StringLiteralExpression.class).with(new PatternCondition<>("default attribute value") {
             @Override
-            public boolean accepts(@NotNull StringLiteralExpression stringLiteralExpression, ProcessingContext processingContext) {
+            public boolean accepts(StringLiteralExpression stringLiteralExpression, ProcessingContext processingContext) {
                 return stringLiteralExpression.getPrevSibling() == null;
             }
         }).withParent(PlatformPatterns.psiElement(ParameterList.class).withParent(PhpAttribute.class));
@@ -368,7 +367,6 @@ public class AnnotationPattern {
     /**
      * Pattern @Foo(Foo::<caret>), @Foo(name=Foo::<caret>)
      */
-    @NotNull
     public static ElementPattern<PsiElement> getDocStaticPattern() {
         return DOC_STATIC_PATTERN;
     }
@@ -399,7 +397,7 @@ public class AnnotationPattern {
      * #[Route('/path', name: '<caret>')]
      * @return
      */
-    public static PsiElementPattern.@NotNull Capture<PsiElement> getAttributesValuePattern() {
+    public static PsiElementPattern.Capture<PsiElement> getAttributesValuePattern() {
         return ATTRIBUTES_VALUE_PATTERN;
     }
 

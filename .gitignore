@@ -9,4 +9,4 @@ out/
 *.hprof
 .mcp.json
 .codex
-.kotlin
+target/

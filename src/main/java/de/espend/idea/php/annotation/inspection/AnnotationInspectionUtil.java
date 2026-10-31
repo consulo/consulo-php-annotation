@@ -1,14 +1,13 @@
 package de.espend.idea.php.annotation.inspection;
 
-import com.intellij.psi.PsiElement;
+import consulo.language.psi.PsiElement;
 import com.jetbrains.php.codeInsight.PhpCodeInsightUtil;
 import com.jetbrains.php.lang.PhpLangUtil;
 import com.jetbrains.php.lang.psi.elements.PhpNamespace;
 import com.jetbrains.php.lang.psi.elements.PhpPsiElement;
 import de.espend.idea.php.annotation.util.AnnotationUtil;
 import org.apache.commons.lang3.StringUtils;
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
+import org.jspecify.annotations.Nullable;
 
 import java.util.Arrays;
 import java.util.Map;
@@ -18,7 +17,7 @@ import java.util.Map;
  */
 public class AnnotationInspectionUtil {
     @Nullable
-    public static String getClassFqnString(@NotNull String namespaceForDocIdentifier, @NotNull LazyNamespaceImportResolver lazyNamespaceImportResolver) {
+    public static String getClassFqnString(String namespaceForDocIdentifier, LazyNamespaceImportResolver lazyNamespaceImportResolver) {
         // absolute class use it directly
         if (namespaceForDocIdentifier.startsWith("\\")) {
             return namespaceForDocIdentifier;
@@ -47,7 +46,6 @@ public class AnnotationInspectionUtil {
     }
 
     public static class LazyNamespaceImportResolver {
-        @NotNull
         private final PsiElement psiElement;
 
         @Nullable
@@ -58,11 +56,10 @@ public class AnnotationInspectionUtil {
 
         private boolean hasNamespace = false;
 
-        public LazyNamespaceImportResolver(@NotNull PsiElement psiElement) {
+        public LazyNamespaceImportResolver(PsiElement psiElement) {
             this.psiElement = psiElement;
         }
 
-        @NotNull
         public Map<String, String> getImports() {
             if (imports != null) {
                 return this.imports;

@@ -1,18 +1,17 @@
 package de.espend.idea.php.annotation.util;
 
-import com.intellij.openapi.editor.Editor;
-import com.intellij.patterns.ElementPattern;
-import com.intellij.patterns.PlatformPatterns;
-import com.intellij.patterns.PsiElementPattern;
-import com.intellij.psi.PsiElement;
-import com.intellij.psi.PsiWhiteSpace;
-import com.intellij.psi.util.PsiTreeUtil;
+import consulo.codeEditor.Editor;
+import consulo.language.pattern.ElementPattern;
+import consulo.language.pattern.PlatformPatterns;
+import consulo.language.pattern.PsiElementPattern;
+import consulo.language.psi.PsiElement;
+import consulo.language.psi.PsiWhiteSpace;
+import consulo.language.psi.util.PsiTreeUtil;
 import com.jetbrains.php.lang.lexer.PhpTokenTypes;
 import com.jetbrains.php.lang.psi.PhpPsiUtil;
 import com.jetbrains.php.lang.psi.elements.*;
 import org.apache.commons.lang3.StringUtils;
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
+import org.jspecify.annotations.Nullable;
 
 import java.text.MessageFormat;
 import java.util.ArrayList;
@@ -25,7 +24,7 @@ import java.util.Collection;
  */
 public class PhpPsiAttributesUtil {
     @Nullable
-    public static String getAttributeValueByNameAsStringWithClassConstant(@NotNull PhpAttribute attribute, @NotNull String attributeName) {
+    public static String getAttributeValueByNameAsStringWithClassConstant(PhpAttribute attribute, String attributeName) {
         PsiElement nextSibling = findAttributeByName(attribute, attributeName);
 
         if (nextSibling instanceof StringLiteralExpression) {
@@ -44,7 +43,7 @@ public class PhpPsiAttributesUtil {
      * Workaround to find given attribute: "#[Route('/attributesWithoutName', name: "")]" as attribute iteration given the index as "int" but not the key as name
      */
     @Nullable
-    private static PsiElement findAttributeByName(@NotNull PhpAttribute attribute, @NotNull String attributeName) {
+    private static PsiElement findAttributeByName(PhpAttribute attribute, String attributeName) {
         ParameterList parameterList = PsiTreeUtil.findChildOfType(attribute, ParameterList.class);
         if (parameterList == null) {
             return null;
@@ -64,7 +63,6 @@ public class PhpPsiAttributesUtil {
     /**
      * "#[Route('/path', name: 'attributes_action')]"
      */
-    @NotNull
     private static PsiElementPattern.Capture<PsiElement> getAttributeColonPattern(String name) {
         return PlatformPatterns.psiElement().withElementType(
             PhpTokenTypes.opCOLON
@@ -72,7 +70,7 @@ public class PhpPsiAttributesUtil {
     }
 
     @Nullable
-    private static String resolveClassReferenceValue(@NotNull ClassConstantReference nextSibling) {
+    private static String resolveClassReferenceValue(ClassConstantReference nextSibling) {
         if (nextSibling.getClassReference() instanceof ClassReference classReference) {
             String fqn = classReference.getFQN();
 
@@ -84,7 +82,6 @@ public class PhpPsiAttributesUtil {
         return null;
     }
 
-    @NotNull
     private static <T extends PsiElement> Collection<T> getChildrenOfTypeAsList(@Nullable PsiElement element, ElementPattern<T> pattern) {
 
         Collection<T> collection = new ArrayList<>();
@@ -103,8 +100,12 @@ public class PhpPsiAttributesUtil {
         return collection;
     }
 
-    public static void insertNamedArgumentForAttribute(@NotNull Editor editor, @NotNull PhpAttribute phpAttribute, @NotNull String namedArgument, String value) {
+    public static void insertNamedArgumentForAttribute(Editor editor, PhpAttribute phpAttribute, String namedArgument, String value) {
         PsiElement lastChild = phpAttribute.getLastChild();
+        if (lastChild == null) {
+            return;
+        }
+
         if (lastChild instanceof ClassReference) {
             editor.getDocument().insertString(lastChild.getTextRange().getEndOffset(), MessageFormat.format("({0}: {1})", namedArgument, value));
         } else {

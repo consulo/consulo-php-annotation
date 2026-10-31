@@ -1,13 +1,12 @@
 package de.espend.idea.php.annotation.reference.references;
 
-import com.intellij.psi.PsiElement;
-import com.intellij.psi.PsiElementResolveResult;
-import com.intellij.psi.PsiPolyVariantReferenceBase;
-import com.intellij.psi.ResolveResult;
+import consulo.language.psi.PsiElement;
+import consulo.language.psi.PsiElementResolveResult;
+import consulo.language.psi.PsiPolyVariantReferenceBase;
+import consulo.language.psi.ResolveResult;
 import com.jetbrains.php.lang.psi.elements.PhpClass;
 import com.jetbrains.php.lang.psi.elements.StringLiteralExpression;
 import de.espend.idea.php.annotation.util.PhpElementsUtil;
-import org.jetbrains.annotations.NotNull;
 
 /**
  * @author Daniel Espendiller <daniel@espendiller.net>
@@ -21,9 +20,8 @@ public class PhpClassReference extends PsiPolyVariantReferenceBase<PsiElement> {
         this.content = psiElement.getContents();
     }
 
-    @NotNull
     @Override
-    public ResolveResult @NotNull [] multiResolve(boolean b) {
+    public ResolveResult [] multiResolve(boolean b) {
 
         PhpClass phpClass = PhpElementsUtil.getClassInsideAnnotation((StringLiteralExpression) getElement(), content);
         if(phpClass == null) {
@@ -35,9 +33,8 @@ public class PhpClassReference extends PsiPolyVariantReferenceBase<PsiElement> {
         };
     }
 
-    @NotNull
     @Override
-    public Object @NotNull [] getVariants() {
+    public Object [] getVariants() {
         return new Object[0];
     }
 }

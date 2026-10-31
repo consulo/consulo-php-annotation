@@ -1,14 +1,16 @@
 package de.espend.idea.php.annotation.inspection;
 
-import com.intellij.codeInsight.hint.HintManager;
-import com.intellij.codeInspection.LocalQuickFixAndIntentionActionOnPsiElement;
-import com.intellij.openapi.command.WriteCommandAction;
-import com.intellij.openapi.editor.Editor;
-import com.intellij.openapi.project.Project;
-import com.intellij.openapi.ui.popup.JBPopupFactory;
-import com.intellij.openapi.util.Pair;
-import com.intellij.psi.PsiElement;
-import com.intellij.psi.PsiFile;
+import consulo.language.editor.hint.HintManager;
+import consulo.language.editor.inspection.LocalQuickFixAndIntentionActionOnPsiElement;
+import consulo.language.editor.WriteCommandAction;
+import consulo.codeEditor.Editor;
+import consulo.project.Project;
+import consulo.ui.ex.popup.JBPopup;
+import consulo.ui.ex.popup.JBPopupFactory;
+import consulo.localize.LocalizeValue;
+import consulo.util.lang.Pair;
+import consulo.language.psi.PsiElement;
+import consulo.language.psi.PsiFile;
 import com.jetbrains.php.codeInsight.PhpCodeInsightUtil;
 import com.jetbrains.php.lang.documentation.phpdoc.psi.tags.PhpDocTag;
 import com.jetbrains.php.lang.psi.elements.PhpClass;
@@ -16,8 +18,7 @@ import com.jetbrains.php.lang.psi.elements.PhpPsiElement;
 import com.jetbrains.php.refactoring.PhpAliasImporter;
 import de.espend.idea.php.annotation.util.PhpElementsUtil;
 import org.apache.commons.lang3.StringUtils;
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
+import org.jspecify.annotations.Nullable;
 
 import java.util.Collection;
 import java.util.List;
@@ -27,26 +28,22 @@ import java.util.stream.Collectors;
  * @author Daniel Espendiller <daniel@espendiller.net>
  */
 public class ImportUseForAnnotationQuickFix extends LocalQuickFixAndIntentionActionOnPsiElement {
-    @NotNull
-    private final Collection<Pair<String, String>>  classes;
+    private final Collection<Pair<String, @Nullable String>> myClasses;
 
-    ImportUseForAnnotationQuickFix(@NotNull PhpDocTag phpDocTag, @NotNull Collection<Pair<String, String>>  classes) {
+    ImportUseForAnnotationQuickFix(PhpDocTag phpDocTag, Collection<Pair<String, @Nullable String>> classes) {
         super(phpDocTag);
-        this.classes = classes;
+        myClasses = classes;
     }
 
-    @NotNull
     @Override
-    public String getFamilyName() {
-        return "Annotation";
+    public LocalizeValue getText() {
+        return LocalizeValue.of(getTextString());
     }
 
-    @NotNull
-    @Override
-    public String getText() {
+    private String getTextString() {
         // single class presentable item
-        if(this.classes.size() == 1) {
-            Pair<String, String> next = this.classes.iterator().next();
+        if(myClasses.size() == 1) {
+            Pair<String, @Nullable String> next = myClasses.iterator().next();
             String message = "Import: " + StringUtils.stripStart(next.getFirst(), "\\");
 
             String alias = next.getSecond();
@@ -58,45 +55,47 @@ public class ImportUseForAnnotationQuickFix extends LocalQuickFixAndIntentionAct
         }
 
         // multiple classes found just display overall count
-        return String.format("Import class (%s)", this.classes.size());
+        return String.format("Import class (%s)", myClasses.size());
     }
 
-    public void invoke(@NotNull Project project, @NotNull PsiFile psiFile, @Nullable Editor editor, @NotNull PsiElement startElement, @NotNull PsiElement endElement) {
+    @Override
+    public void invoke(Project project, PsiFile psiFile, @Nullable Editor editor, PsiElement startElement, PsiElement endElement) {
         if(editor == null) {
             return;
         }
 
-        if(this.classes.isEmpty()) {
+        if(myClasses.isEmpty()) {
             HintManager.getInstance().showErrorHint(editor, "Ops, nothing found");
             return;
         }
 
         // single item, directly run it
-        if(this.classes.size() == 1) {
-            invoke(startElement, classes.iterator().next());
+        if(myClasses.size() == 1) {
+            invoke(startElement, myClasses.iterator().next());
             return;
         }
 
         // strip first "\"
-        List<PopupChooserItem> popupChooserItems = this.classes.stream()
+        List<PopupChooserItem> popupChooserItems = myClasses.stream()
             .map(pair -> {
                 PhpClass classInterface = PhpElementsUtil.getClassInterface(project, pair.getFirst());
                 return new PopupChooserItem(pair, classInterface != null && classInterface.isDeprecated());
             })
             .collect(Collectors.toList());
 
-        JBPopupFactory.getInstance().createPopupChooserBuilder(popupChooserItems)
+        JBPopup popup = JBPopupFactory.getInstance().createPopupChooserBuilder(popupChooserItems)
             .setTitle("Import: Annotation Suggestion")
             .setItemChosenCallback(selected ->
                 WriteCommandAction.writeCommandAction(editor.getProject())
                     .withName("Import: " + selected)
                     .run(() -> invoke(startElement, selected.item()))
             )
-            .createPopup()
-            .showInBestPositionFor(editor);
+            .createPopup();
+
+        editor.showPopupInBestPositionFor(popup);
     }
 
-    private void invoke(@NotNull PsiElement psiElement, @NotNull Pair<String, String> pair) {
+    private void invoke(PsiElement psiElement, Pair<String, @Nullable String> pair) {
         PhpPsiElement scopeForUseOperator = PhpCodeInsightUtil.findScopeForUseOperator(psiElement);
         if(scopeForUseOperator != null) {
             if (pair.getSecond() == null) {
@@ -107,7 +106,7 @@ public class ImportUseForAnnotationQuickFix extends LocalQuickFixAndIntentionAct
         }
     }
 
-    private record PopupChooserItem(@NotNull Pair<String, String> item, boolean isDeprecated) {
+    private record PopupChooserItem(Pair<String, @Nullable String> item, boolean isDeprecated) {
         @Override
         public String toString() {
             String itemText = StringUtils.stripStart(item.getFirst(), "\\");

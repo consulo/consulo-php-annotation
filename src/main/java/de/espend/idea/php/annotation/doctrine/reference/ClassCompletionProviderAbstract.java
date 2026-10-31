@@ -1,7 +1,7 @@
 package de.espend.idea.php.annotation.doctrine.reference;
 
-import com.intellij.psi.PsiElement;
-import com.intellij.psi.PsiReference;
+import consulo.language.psi.PsiElement;
+import consulo.language.psi.PsiReference;
 import com.jetbrains.php.PhpIndex;
 import com.jetbrains.php.completion.PhpCompletionUtil;
 import com.jetbrains.php.lang.psi.elements.StringLiteralExpression;
@@ -12,15 +12,14 @@ import de.espend.idea.php.annotation.extension.parameter.AnnotationPropertyParam
 import de.espend.idea.php.annotation.extension.parameter.PhpAnnotationReferenceProviderParameter;
 import de.espend.idea.php.annotation.reference.references.PhpClassReference;
 import org.apache.commons.lang3.StringUtils;
-import org.jetbrains.annotations.Nullable;
+import org.jspecify.annotations.Nullable;
 
 /**
  * @author Daniel Espendiller <daniel@espendiller.net>
  */
 public abstract class ClassCompletionProviderAbstract implements PhpAnnotationReferenceProvider, PhpAnnotationCompletionProvider {
-    @Nullable
     @Override
-    public PsiReference[] getPropertyReferences(AnnotationPropertyParameter parameter, PhpAnnotationReferenceProviderParameter referencesByElementParameter) {
+    public PsiReference @Nullable [] getPropertyReferences(AnnotationPropertyParameter parameter, PhpAnnotationReferenceProviderParameter referencesByElementParameter) {
         if(!supports(parameter)) {
             return new PsiReference[0];
         }

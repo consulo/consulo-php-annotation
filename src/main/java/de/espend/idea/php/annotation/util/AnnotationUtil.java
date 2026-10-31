@@ -1,28 +1,29 @@
 package de.espend.idea.php.annotation.util;
 
-import com.intellij.codeInsight.completion.PlainPrefixMatcher;
-import com.intellij.codeInsight.completion.StartOnlyMatcher;
-import com.intellij.openapi.editor.Editor;
-import com.intellij.openapi.extensions.ExtensionPointName;
-import com.intellij.openapi.project.Project;
-import com.intellij.openapi.util.Key;
-import com.intellij.openapi.util.ModificationTracker;
-import com.intellij.openapi.vfs.VfsUtil;
-import com.intellij.openapi.vfs.VirtualFile;
-import com.intellij.patterns.PlatformPatterns;
-import com.intellij.patterns.PsiElementPattern;
-import com.intellij.psi.*;
-import com.intellij.psi.search.GlobalSearchScope;
-import com.intellij.psi.util.CachedValue;
-import com.intellij.psi.util.CachedValueProvider;
-import com.intellij.psi.util.CachedValuesManager;
-import com.intellij.psi.util.PsiTreeUtil;
-import com.intellij.util.Processor;
-import com.intellij.util.TripleFunction;
-import com.intellij.util.containers.ContainerUtil;
-import com.intellij.util.indexing.FileBasedIndex;
-import com.intellij.util.indexing.FileContent;
-import com.intellij.util.indexing.ID;
+import consulo.language.psi.PsiModificationTracker;
+import consulo.language.psi.stub.StubIndexKey;
+import consulo.application.util.matcher.PlainPrefixMatcher;
+import consulo.codeEditor.Editor;
+import consulo.component.extension.ExtensionPointName;
+import consulo.project.Project;
+import consulo.util.dataholder.Key;
+import consulo.component.util.ModificationTracker;
+import consulo.virtualFileSystem.util.VirtualFileUtil;
+import consulo.virtualFileSystem.VirtualFile;
+import consulo.virtualFileSystem.util.VirtualFileUtil;
+import consulo.language.pattern.PlatformPatterns;
+import consulo.language.pattern.PsiElementPattern;
+import consulo.language.psi.*;
+import consulo.language.psi.scope.GlobalSearchScope;
+import consulo.application.util.CachedValue;
+import consulo.application.util.CachedValueProvider;
+import consulo.application.util.CachedValuesManager;
+import consulo.language.psi.util.PsiTreeUtil;
+import consulo.application.util.function.Processor;
+import consulo.util.collection.ContainerUtil;
+import consulo.language.psi.stub.FileBasedIndex;
+import consulo.language.psi.stub.FileContent;
+import consulo.index.io.ID;
 import com.jetbrains.php.PhpIndex;
 import com.jetbrains.php.codeInsight.PhpCodeInsightUtil;
 import com.jetbrains.php.config.PhpLanguageFeature;
@@ -46,8 +47,7 @@ import de.espend.idea.php.annotation.extension.parameter.AnnotationGlobalNamespa
 import de.espend.idea.php.annotation.inspection.AnnotationInspectionUtil;
 import de.espend.idea.php.annotation.pattern.AnnotationPattern;
 import org.apache.commons.lang3.StringUtils;
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
+import org.jspecify.annotations.Nullable;
 
 import java.text.MessageFormat;
 import java.util.*;
@@ -62,15 +62,15 @@ public class AnnotationUtil {
     private static final Key<CachedValue<Map<String, PhpAnnotation>>> ANNOTATION_FQN_MAP_CACHE = new Key<>("ANNOTATION_FQN_MAP_CACHE");
     private static final Pattern ANNOTATION_TARGET_PATTERN = Pattern.compile("\"(\\w+)\"");
 
-    public static final ExtensionPointName<PhpAnnotationCompletionProvider> EXTENSION_POINT_COMPLETION = new ExtensionPointName<>("de.espend.idea.php.annotation.PhpAnnotationCompletionProvider");
-    public static final ExtensionPointName<PhpAnnotationReferenceProvider> EXTENSION_POINT_REFERENCES = new ExtensionPointName<>("de.espend.idea.php.annotation.PhpAnnotationReferenceProvider");
+    public static final ExtensionPointName<PhpAnnotationCompletionProvider> EXTENSION_POINT_COMPLETION = ExtensionPointName.create(PhpAnnotationCompletionProvider.class);
+    public static final ExtensionPointName<PhpAnnotationReferenceProvider> EXTENSION_POINT_REFERENCES = ExtensionPointName.create(PhpAnnotationReferenceProvider.class);
 
-    public static final ExtensionPointName<PhpAnnotationDocTagGotoHandler> EP_DOC_TAG_GOTO = new ExtensionPointName<>("de.espend.idea.php.annotation.PhpAnnotationDocTagGotoHandler");
-    public static final ExtensionPointName<PhpAnnotationDocTagAnnotator> EP_DOC_TAG_ANNOTATOR = new ExtensionPointName<>("de.espend.idea.php.annotation.PhpAnnotationDocTagAnnotator");
-    public static final ExtensionPointName<PhpAnnotationGlobalNamespacesLoader> EXTENSION_POINT_GLOBAL_NAMESPACES = new ExtensionPointName<>("de.espend.idea.php.annotation.PhpAnnotationGlobalNamespacesLoader");
+    public static final ExtensionPointName<PhpAnnotationDocTagGotoHandler> EP_DOC_TAG_GOTO = ExtensionPointName.create(PhpAnnotationDocTagGotoHandler.class);
+    public static final ExtensionPointName<PhpAnnotationDocTagAnnotator> EP_DOC_TAG_ANNOTATOR = ExtensionPointName.create(PhpAnnotationDocTagAnnotator.class);
+    public static final ExtensionPointName<PhpAnnotationGlobalNamespacesLoader> EXTENSION_POINT_GLOBAL_NAMESPACES = ExtensionPointName.create(PhpAnnotationGlobalNamespacesLoader.class);
 
-    public static final ExtensionPointName<PhpAnnotationVirtualProperties> EP_VIRTUAL_PROPERTIES = new ExtensionPointName<>("de.espend.idea.php.annotation.PhpAnnotationVirtualProperties");
-    public static final ExtensionPointName<PhpAnnotationUseAlias> EP_USE_ALIASES = new ExtensionPointName<>("de.espend.idea.php.annotation.PhpAnnotationUseAlias");
+    public static final ExtensionPointName<PhpAnnotationVirtualProperties> EP_VIRTUAL_PROPERTIES = ExtensionPointName.create(PhpAnnotationVirtualProperties.class);
+    public static final ExtensionPointName<PhpAnnotationUseAlias> EP_USE_ALIASES = ExtensionPointName.create(PhpAnnotationUseAlias.class);
 
     final private static Set<String> NON_ANNOTATION_TAGS = new HashSet<>() {{
         addAll(Arrays.asList(PhpDocUtil.ALL_TAGS));
@@ -106,7 +106,7 @@ public class AnnotationUtil {
         add("@Then");
     }};
 
-    public static boolean isAnnotationClass(@NotNull PhpClass phpClass) {
+    public static boolean isAnnotationClass(PhpClass phpClass) {
         return getClassAnnotationTargets(phpClass) != null;
     }
 
@@ -123,7 +123,7 @@ public class AnnotationUtil {
      * Array and single value supported: @Target("PROPERTY", "METHOD"), @Target("CLASS")
      */
     @Nullable
-    public static PhpAnnotation getClassAnnotation(@NotNull PhpClass phpClass) {
+    public static PhpAnnotation getClassAnnotation(PhpClass phpClass) {
         String fqn = StringUtils.stripStart(phpClass.getFQN(), "\\");
         if (StringUtils.isNotBlank(fqn)) {
             PhpAnnotation cached = getCachedAnnotationsMap(phpClass.getProject()).get(fqn);
@@ -140,8 +140,7 @@ public class AnnotationUtil {
         return new PhpAnnotation(phpClass, targets);
     }
 
-    @NotNull
-    public static Map<String, PhpAnnotation> getAnnotationsOnTargetMap(@NotNull Project project, AnnotationTarget... targets) {
+    public static Map<String, PhpAnnotation> getAnnotationsOnTargetMap(Project project, AnnotationTarget... targets) {
         Map<String, PhpAnnotation> phpAnnotations = new HashMap<>();
 
         for (Map.Entry<String, PhpAnnotation> entry : getCachedAnnotationsMap(project).entrySet()) {
@@ -158,8 +157,7 @@ public class AnnotationUtil {
     /**
      * Build a cached map of all indexed annotation classes keyed by normalized FQN.
      */
-    @NotNull
-    public static Map<String, PhpAnnotation> getCachedAnnotationsMap(@NotNull Project project) {
+    public static Map<String, PhpAnnotation> getCachedAnnotationsMap(Project project) {
         return CachedValuesManager.getManager(project).getCachedValue(
             project,
             ANNOTATION_FQN_MAP_CACHE,
@@ -199,8 +197,11 @@ public class AnnotationUtil {
      * @deprecated "Use PsiElement parameter and check for null"
      */
     @Deprecated
-    @NotNull
     public static Map<String, String> getUseImportMap(@Nullable PhpDocTag phpDocTag) {
+        if (phpDocTag == null) {
+            return Collections.emptyMap();
+        }
+
         return getUseImportMap((PsiElement) phpDocTag);
     }
 
@@ -209,6 +210,10 @@ public class AnnotationUtil {
      */
     @Deprecated
     public static Map<String, String> getUseImportMap(@Nullable PhpDocComment phpDocComment) {
+        if (phpDocComment == null) {
+            return Collections.emptyMap();
+        }
+
         return getUseImportMap((PsiElement) phpDocComment);
     }
 
@@ -218,8 +223,7 @@ public class AnnotationUtil {
      * @param PhpDocComment current doc scope
      * @return map with class names as key and fqn on value
      */
-    @NotNull
-    public static Map<String, String> getUseImportMap(@NotNull PsiElement phpDocComment) {
+    public static Map<String, String> getUseImportMap(PsiElement phpDocComment) {
         PhpPsiElement scope = PhpCodeInsightUtil.findScopeForUseOperator(phpDocComment);
         if(scope == null) {
             return Collections.emptyMap();
@@ -309,7 +313,7 @@ public class AnnotationUtil {
      * "\My\Bar::cla<caret>ss" => "\My\Bar"
      */
     @Nullable
-    public static PhpClass getClassFromConstant(@NotNull PsiElement psiElement) {
+    public static PhpClass getClassFromConstant(PsiElement psiElement) {
         PsiElement prevSibling = psiElement.getPrevSibling();
 
         if (prevSibling == null || !de.espend.idea.php.annotation.util.PhpDocUtil.isDocStaticElement(prevSibling)) {
@@ -328,7 +332,7 @@ public class AnnotationUtil {
      * "\My\B<caret>ar::class" => "\My\Bar"
      */
     @Nullable
-    public static PhpClass getClassFromDocIdentifier(@NotNull PsiElement psiElement) {
+    public static PhpClass getClassFromDocIdentifier(PsiElement psiElement) {
         String classFromDocIdentifierAsString = getClassFromDocIdentifierAsString(psiElement);
         if (classFromDocIdentifierAsString == null) {
             return null;
@@ -341,7 +345,7 @@ public class AnnotationUtil {
      * "\My\B<caret>ar::class" => "\My\Bar"
      */
     @Nullable
-    public static String getClassFromDocIdentifierAsString(@NotNull PsiElement psiElement) {
+    public static String getClassFromDocIdentifierAsString(PsiElement psiElement) {
         if(psiElement.getNode().getElementType() != PhpDocTokenTypes.DOC_IDENTIFIER) {
             return null;
         }
@@ -390,19 +394,24 @@ public class AnnotationUtil {
 
     }
 
-    public static boolean isValidForIndex(@NotNull FileContent inputData) {
+    public static boolean isValidForIndex(FileContent inputData) {
         String fileName = inputData.getPsiFile().getName();
         if(fileName.startsWith(".") || fileName.contains("Test")) {
             return false;
         }
 
         // we check for project path, on no match we are properly inside external library paths
-        VirtualFile baseDir = inputData.getProject().getBaseDir();
+        Project project = inputData.getProject();
+        if (project == null) {
+            return true;
+        }
+
+        VirtualFile baseDir = project.getBaseDir();
         if (baseDir == null) {
             return true;
         }
 
-        String relativePath = VfsUtil.getRelativePath(inputData.getFile(), baseDir, '/');
+        String relativePath = VirtualFileUtil.getRelativePath(inputData.getFile(), baseDir, '/');
         if(relativePath == null) {
             return true;
         }
@@ -434,7 +443,7 @@ public class AnnotationUtil {
     }
 
     @Nullable
-    public static PhpDocTagAnnotation getPhpDocAnnotationContainer(@NotNull PhpDocTag phpDocTag) {
+    public static PhpDocTagAnnotation getPhpDocAnnotationContainer(PhpDocTag phpDocTag) {
 
         PhpClass annotationReference = getAnnotationReference(phpDocTag);
         if(annotationReference == null) {
@@ -455,7 +464,7 @@ public class AnnotationUtil {
             && (nextPsiElement instanceof Method || nextPsiElement instanceof PhpClass || nextPsiElement.getNode().getElementType() == PhpElementTypes.CLASS_FIELDS);
     }
 
-    public static Map<String, String> getPossibleImportClasses(@NotNull PhpDocTag phpDocTag) {
+    public static Map<String, String> getPossibleImportClasses(PhpDocTag phpDocTag) {
         String className = phpDocTag.getName();
         if (className.startsWith("@")) {
             className = className.substring(1);
@@ -503,7 +512,7 @@ public class AnnotationUtil {
      * '@Foo(name={"FOOBAR", "FOOBAR2"})'
      */
     @Nullable
-    public static PsiElement getPropertyForArray(@NotNull StringLiteralExpression psiElement) {
+    public static PsiElement getPropertyForArray(StringLiteralExpression psiElement) {
         return PhpElementsUtil.getPrevSiblingOfPatternMatch(psiElement, AnnotationPattern.getPropertyNameOfArrayValuePattern());
     }
 
@@ -514,7 +523,7 @@ public class AnnotationUtil {
      * "@Template(template="foobar.html.twig")"
      */
     @Nullable
-    public static String getPropertyValueOrDefault(@NotNull PhpDocTag phpDocTag, @NotNull String property) {
+    public static String getPropertyValueOrDefault(PhpDocTag phpDocTag, String property) {
         PhpPsiElement attributeList = phpDocTag.getFirstPsiChild();
         if(attributeList == null || attributeList.getNode().getElementType() != PhpDocElementTypes.phpDocAttributeList) {
             return null;
@@ -562,7 +571,7 @@ public class AnnotationUtil {
      * "@Template(template="foobar.html.twig")"
      */
     @Nullable
-    public static String getPropertyValue(@NotNull PhpDocTag phpDocTag, @NotNull String property) {
+    public static String getPropertyValue(PhpDocTag phpDocTag, String property) {
         PhpPsiElement attributeList = phpDocTag.getFirstPsiChild();
         if(attributeList == null || attributeList.getNode().getElementType() != PhpDocElementTypes.phpDocAttributeList) {
             return null;
@@ -592,7 +601,7 @@ public class AnnotationUtil {
      * "@Template(template="foobar.html.twig")"
      */
     @Nullable
-    public static StringLiteralExpression getPropertyValueAsPsiElement(@NotNull PhpDocTag phpDocTag, @NotNull String property) {
+    public static StringLiteralExpression getPropertyValueAsPsiElement(PhpDocTag phpDocTag, String property) {
         PhpPsiElement attributeList = phpDocTag.getFirstPsiChild();
         if(attributeList == null || attributeList.getNode().getElementType() != PhpDocElementTypes.phpDocAttributeList) {
             return null;
@@ -620,7 +629,7 @@ public class AnnotationUtil {
      * "@Template(template=Foobar::class)"
      */
     @Nullable
-    public static PsiElement getPropertyValueAsElement(@NotNull PhpDocTag phpDocTag, @NotNull String property) {
+    public static PsiElement getPropertyValueAsElement(PhpDocTag phpDocTag, String property) {
         PhpPsiElement attributeList = phpDocTag.getFirstPsiChild();
         if(attributeList == null || attributeList.getNode().getElementType() != PhpDocElementTypes.phpDocAttributeList) {
             return null;
@@ -638,8 +647,7 @@ public class AnnotationUtil {
             .orElse(null);
     }
 
-    @NotNull
-    private static Collection<PsiFile> getFilesImplementingAnnotation(@NotNull Project project, @NotNull String phpClassName) {
+    private static Collection<PsiFile> getFilesImplementingAnnotation(Project project, String phpClassName) {
         Collection<VirtualFile> files = new HashSet<>();
 
         FileBasedIndex.getInstance().getFilesWithKey(AnnotationUsageIndex.KEY, new HashSet<>(Collections.singletonList(phpClassName)), virtualFile -> {
@@ -671,7 +679,7 @@ public class AnnotationUtil {
      * @param fqnClassName Foobar\ClassName
      * @return targets
      */
-    public static Collection<PsiElement> getImplementationsForAnnotation(@NotNull Project project, @NotNull String fqnClassName) {
+    public static Collection<PsiElement> getImplementationsForAnnotation(Project project, String fqnClassName) {
         Collection<PsiElement> psiElements = new HashSet<>();
 
         for (PsiFile psiFile : getFilesImplementingAnnotation(project, fqnClassName)) {
@@ -693,7 +701,7 @@ public class AnnotationUtil {
      * @return comma-separated enum names or null if the class is not an annotation
      */
     @Nullable
-    public static String getSerializedAnnotationTargets(@NotNull PhpClass phpClass) {
+    public static String getSerializedAnnotationTargets(PhpClass phpClass) {
         List<AnnotationTarget> targets = getClassAnnotationTargets(phpClass);
         if (targets == null || targets.isEmpty()) {
             return null;
@@ -705,8 +713,7 @@ public class AnnotationUtil {
     /**
      * Restore annotation targets from the file index value.
      */
-    @NotNull
-    public static List<AnnotationTarget> getAnnotationTargetsFromSerializedValue(@NotNull String serializedValue) {
+    public static List<AnnotationTarget> getAnnotationTargetsFromSerializedValue(String serializedValue) {
         if (StringUtils.isBlank(serializedValue)) {
             return Collections.singletonList(AnnotationTarget.UNDEFINED);
         }
@@ -723,7 +730,6 @@ public class AnnotationUtil {
         return targets.isEmpty() ? Collections.singletonList(AnnotationTarget.UNDEFINED) : targets;
     }
 
-    @NotNull
     public static Collection<UseAliasOption> getActiveImportsAliasesFromSettings() {
         Collection<UseAliasOption> useAliasOptions = ApplicationSettings.getUseAliasOptionsWithDefaultFallback();
         if(useAliasOptions.isEmpty()) {
@@ -740,7 +746,7 @@ public class AnnotationUtil {
      * "@Attributes({@Attribute("accessControl", type="string")})"
      * "class foo { public $foo; }"
      */
-    public static void visitAttributes(@NotNull PhpClass phpClass, TripleFunction<String, String, PsiElement, Void> fn) {
+    public static void visitAttributes(PhpClass phpClass, AttributeVisitor fn) {
         for (Field field : phpClass.getFields()) {
             if(field.isConstant()) {
                 continue;
@@ -753,7 +759,7 @@ public class AnnotationUtil {
                 }
             }
 
-            fn.fun(field.getName(), type, field);
+            fn.visit(field.getName(), type, field);
         }
 
         PhpDocComment docComment = phpClass.getDocComment();
@@ -770,7 +776,7 @@ public class AnnotationUtil {
                         continue;
                     }
 
-                    fn.fun(defaultPropertyValue, AnnotationUtil.getPropertyValue(docTag, "type"), docTag);
+                    fn.visit(defaultPropertyValue, AnnotationUtil.getPropertyValue(docTag, "type"), docTag);
                 }
             }
         }
@@ -782,7 +788,7 @@ public class AnnotationUtil {
      * Returns null when the class is not marked as an annotation.
      */
     @Nullable
-    private static List<AnnotationTarget> getClassAnnotationTargets(@NotNull PhpClass phpClass) {
+    private static List<AnnotationTarget> getClassAnnotationTargets(PhpClass phpClass) {
         PhpDocComment phpDocComment = phpClass.getDocComment();
         if (phpDocComment == null || phpDocComment.getTagElementsByName("@Annotation").length == 0) {
             return null;
@@ -816,8 +822,7 @@ public class AnnotationUtil {
         return targets.isEmpty() ? null : targets;
     }
 
-    @NotNull
-    private static String serializeAnnotationTargets(@NotNull List<AnnotationTarget> targets) {
+    private static String serializeAnnotationTargets(List<AnnotationTarget> targets) {
         return targets.stream().map(Enum::name).collect(Collectors.joining(","));
     }
 
@@ -826,16 +831,18 @@ public class AnnotationUtil {
      *
      * This is used by project-level caches that derive their content from indexed values.
      */
-    @NotNull
-    public static ModificationTracker getModificationTrackerForIndexId(@NotNull Project project, @NotNull final ID<?, ?> id) {
+    public static ModificationTracker getModificationTrackerForIndexId(Project project, final ID<?, ?> id) {
+        if (id instanceof StubIndexKey) {
+            // stub indexes have no stamp in FileBasedIndex
+            return PsiModificationTracker.getInstance(project);
+        }
         return () -> FileBasedIndex.getInstance().getIndexModificationStamp(id, project);
     }
-
 
     /**
      * matches "@Callback(propertyName="<value>")"
      */
-    private static PsiElementPattern.Capture<StringLiteralExpression> getPropertyIdentifierValue(@NotNull String propertyName) {
+    private static PsiElementPattern.Capture<StringLiteralExpression> getPropertyIdentifierValue(String propertyName) {
         return PlatformPatterns.psiElement(StringLiteralExpression.class)
             .afterLeafSkipping(
                 PlatformPatterns.or(
@@ -850,7 +857,7 @@ public class AnnotationUtil {
     /**
      * matches "@Callback(propertyName="<value>")"
      */
-    private static PsiElementPattern.Capture<PsiElement> getPropertyIdentifierValueAsPsiElement(@NotNull String propertyName) {
+    private static PsiElementPattern.Capture<PsiElement> getPropertyIdentifierValueAsPsiElement(String propertyName) {
         return PlatformPatterns.psiElement()
             .afterLeafSkipping(
                 PlatformPatterns.or(
@@ -868,7 +875,7 @@ public class AnnotationUtil {
      * @return Content of property value literal
      */
     @Nullable
-    public static String getDefaultPropertyValue(@NotNull PhpDocTag phpDocTag) {
+    public static String getDefaultPropertyValue(PhpDocTag phpDocTag) {
         PhpPsiElement phpDocAttrList = phpDocTag.getFirstPsiChild();
 
         if(phpDocAttrList != null) {
@@ -890,7 +897,7 @@ public class AnnotationUtil {
      *
      * @param tagName include "@" at beginning
      */
-    public static boolean isBlockedAnnotationTag(@NotNull String tagName) {
+    public static boolean isBlockedAnnotationTag(String tagName) {
         if (NON_ANNOTATION_TAGS.contains(tagName)) {
             return true;
         }
@@ -904,7 +911,7 @@ public class AnnotationUtil {
             || lowercase.startsWith("@after"); // AfterSuite, AfterScenario
     }
 
-    public static void insertNamedArgumentForAnnotation(@NotNull Editor editor, @NotNull PhpDocTag phpDocTag, @NotNull String namedArgument, @NotNull String value) {
+    public static void insertNamedArgumentForAnnotation(Editor editor, PhpDocTag phpDocTag, String namedArgument, String value) {
         PsiElement lastChild = phpDocTag.getLastChild();
         if (lastChild == null) {
             return;
@@ -933,14 +940,13 @@ public class AnnotationUtil {
         UNKNOWN
     }
 
-    @NotNull
-    private static MetadataType getAnnotationMetadataUsage(@NotNull PsiElement psiElement) {
+    private static MetadataType getAnnotationMetadataUsage(PsiElement psiElement) {
         final boolean[] hasAnnotation = {false};
         final boolean[] hasAttributes = {false};
 
         psiElement.acceptChildren(new PsiRecursiveElementVisitor() {
             @Override
-            public void visitElement(@NotNull PsiElement element) {
+            public void visitElement(PsiElement element) {
                 if (hasAnnotation[0] || hasAttributes[0]) {
                     return;
                 }
@@ -976,7 +982,7 @@ public class AnnotationUtil {
     /**
      * Decide on a given file scope if attributes or annotation should be used
      */
-    public static boolean useAttributeForGenerateDoctrineMetadata(@NotNull PsiFile file) {
+    public static boolean useAttributeForGenerateDoctrineMetadata(PsiFile file) {
         MetadataType annotationMetadataUsage = getAnnotationMetadataUsage(file);
         if (annotationMetadataUsage != MetadataType.UNKNOWN) {
             return annotationMetadataUsage == MetadataType.ATTRIBUTE;
@@ -994,7 +1000,13 @@ public class AnnotationUtil {
                 String parentFqn = fqn.substring(0, i);
 
                 Collection<String> limit = PhpIndex.getInstance(file.getProject())
-                    .getAllClassFqns(new StartOnlyMatcher(new PlainPrefixMatcher(parentFqn)))
+                    .getAllClassFqns(new PlainPrefixMatcher(parentFqn) {
+                        // IntelliJ StartOnlyMatcher equivalent
+                        @Override
+                        public boolean prefixMatches(String name) {
+                            return isStartMatch(name);
+                        }
+                    })
                     .stream()
                     .sorted(Comparator.comparingDouble(x -> Math.random()))
                     .limit(5)
@@ -1002,7 +1014,12 @@ public class AnnotationUtil {
 
                 for (String s : limit) {
                     for (PhpClass aClass : PhpIndex.getInstance(file.getProject()).getAnyByFQN(s)) {
-                        MetadataType usage = getAnnotationMetadataUsage(aClass.getParent());
+                        PsiElement classParent = aClass.getParent();
+                        if (classParent == null) {
+                            continue;
+                        }
+
+                        MetadataType usage = getAnnotationMetadataUsage(classParent);
                         if (usage != MetadataType.UNKNOWN) {
                             return usage == MetadataType.ATTRIBUTE;
                         }
@@ -1013,5 +1030,13 @@ public class AnnotationUtil {
 
         // fallback to project scope via PHP version
         return PhpLanguageLevel.current(file.getProject()).hasFeature(PhpLanguageFeature.ATTRIBUTES);
+    }
+
+    /**
+     * Visitor for {@link #visitAttributes(PhpClass, AttributeVisitor)}
+     */
+    @FunctionalInterface
+    public interface AttributeVisitor {
+        void visit(String attributeName, @Nullable String type, PsiElement target);
     }
 }

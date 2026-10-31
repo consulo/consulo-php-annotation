@@ -1,11 +1,11 @@
 package de.espend.idea.php.annotation.util;
 
-import com.intellij.openapi.project.Project;
-import com.intellij.patterns.ElementPattern;
-import com.intellij.patterns.PlatformPatterns;
-import com.intellij.psi.PsiElement;
-import com.intellij.psi.PsiReference;
-import com.intellij.psi.util.PsiTreeUtil;
+import consulo.project.Project;
+import consulo.language.pattern.ElementPattern;
+import consulo.language.pattern.PlatformPatterns;
+import consulo.language.psi.PsiElement;
+import consulo.language.psi.PsiReference;
+import consulo.language.psi.util.PsiTreeUtil;
 import com.jetbrains.php.PhpIndex;
 import com.jetbrains.php.codeInsight.PhpCodeInsightUtil;
 import com.jetbrains.php.codeInsight.controlFlow.PhpControlFlowUtil;
@@ -21,8 +21,7 @@ import com.jetbrains.php.lang.psi.stubs.indexes.expectedArguments.PhpExpectedFun
 import com.jetbrains.php.refactoring.PhpAliasImporter;
 import de.espend.idea.php.annotation.dict.AnnotationTarget;
 import org.apache.commons.lang3.StringUtils;
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
+import org.jspecify.annotations.Nullable;
 
 import java.util.Collection;
 import java.util.HashSet;
@@ -81,13 +80,13 @@ public class PhpElementsUtil {
         return null;
     }
 
-    static public AnnotationTarget findAttributeTarget(@NotNull PhpAttributesList phpAttributesList) {
+    static public @Nullable AnnotationTarget findAttributeTarget(PhpAttributesList phpAttributesList) {
         PsiElement parent = phpAttributesList.getParent();
         if (parent instanceof Method) {
             return AnnotationTarget.METHOD;
         }
 
-        if(parent.getNode().getElementType() == PhpElementTypes.CLASS_FIELDS) {
+        if(parent != null && parent.getNode().getElementType() == PhpElementTypes.CLASS_FIELDS) {
             return AnnotationTarget.PROPERTY;
         }
 
@@ -111,7 +110,7 @@ public class PhpElementsUtil {
     }
 
     @Nullable
-    static public PhpClass getClassInterface(@NotNull Project project, @NotNull String className) {
+    static public PhpClass getClassInterface(Project project, String className) {
         Collection<PhpClass> phpClasses = PhpIndex.getInstance(project).getAnyByFQN(className);
         return phpClasses.isEmpty() ? null : phpClasses.iterator().next();
     }
@@ -130,11 +129,11 @@ public class PhpElementsUtil {
         return null;
     }
 
-    public static PhpClass getClassInsideAnnotation(StringLiteralExpression phpDocString) {
+    public static @Nullable PhpClass getClassInsideAnnotation(StringLiteralExpression phpDocString) {
         return getClassInsideAnnotation(phpDocString, phpDocString.getContents());
     }
 
-    public static PhpClass getClassInsideAnnotation(StringLiteralExpression phpDocString, String modelName) {
+    public static @Nullable PhpClass getClassInsideAnnotation(StringLiteralExpression phpDocString, String modelName) {
 
         // \ns\Class fine we dont need to resolve classname we are in global context
         if(modelName.startsWith("\\")) {
@@ -215,7 +214,7 @@ public class PhpElementsUtil {
     /**
      * Foo::class to its class fqn include namespace
      */
-    private static String getClassConstantPhpFqn(@NotNull ClassConstantReference classConstant) {
+    private static @Nullable String getClassConstantPhpFqn(ClassConstantReference classConstant) {
         PhpExpression classReference = classConstant.getClassReference();
         if(!(classReference instanceof PhpReference)) {
             return null;
@@ -236,7 +235,7 @@ public class PhpElementsUtil {
      * Find a string return value of a method context "function() { return 'foo'}"
      */
     @Nullable
-    public static String getMethodReturnAsString(@NotNull PhpClass phpClass, @NotNull String methodName) {
+    public static String getMethodReturnAsString(PhpClass phpClass, String methodName) {
         Method method = phpClass.findMethodByName(methodName);
         if(method == null) {
             return null;
@@ -274,7 +273,7 @@ public class PhpElementsUtil {
      * @param nsClass \Class\Foo
      * @param alias Class\Foo as Bar
      */
-    public static void insertUseIfNecessary(@NotNull PhpPsiElement scopeForUseOperator, @NotNull String nsClass, @Nullable String alias) {
+    public static void insertUseIfNecessary(PhpPsiElement scopeForUseOperator, String nsClass, @Nullable String alias) {
         // we need absolute class, else we get duplicate imports
         if(!nsClass.startsWith("\\")) {
             nsClass = "\\" + nsClass;
@@ -286,7 +285,7 @@ public class PhpElementsUtil {
     }
 
     @Nullable
-    public static String getClassDeprecatedMessage(@NotNull PhpClass phpClass) {
+    public static String getClassDeprecatedMessage(PhpClass phpClass) {
         if (phpClass.isDeprecated()) {
             PhpDocComment docComment = phpClass.getDocComment();
             if (docComment != null) {
@@ -307,7 +306,7 @@ public class PhpElementsUtil {
         return null;
     }
 
-    public static String getAttributeArgumentStringByName(@NotNull PhpAttribute phpAttribute, @NotNull String attributeName) {
+    public static @Nullable String getAttributeArgumentStringByName(PhpAttribute phpAttribute, String attributeName) {
         for (PhpAttribute.PhpAttributeArgument argument : phpAttribute.getArguments()) {
             if (!attributeName.equals(argument.getName())) {
                 continue;

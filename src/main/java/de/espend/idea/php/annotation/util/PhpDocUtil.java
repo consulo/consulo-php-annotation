@@ -1,18 +1,19 @@
 package de.espend.idea.php.annotation.util;
 
-import com.intellij.openapi.editor.Document;
-import com.intellij.psi.PsiDocumentManager;
-import com.intellij.psi.PsiElement;
-import com.intellij.psi.PsiFile;
-import com.intellij.psi.codeStyle.CodeStyleManager;
-import com.intellij.psi.tree.IElementType;
-import com.intellij.psi.util.PsiTreeUtil;
+import consulo.document.Document;
+import consulo.language.psi.PsiDocumentManager;
+import consulo.language.psi.PsiElement;
+import consulo.language.psi.PsiFile;
+import consulo.language.codeStyle.CodeStyleManager;
+import consulo.language.ast.IElementType;
+import consulo.language.psi.util.PsiTreeUtil;
 import com.jetbrains.php.codeInsight.PhpCodeInsightUtil;
 import com.jetbrains.php.lang.PhpLangUtil;
 import com.jetbrains.php.lang.documentation.phpdoc.lexer.PhpDocTokenTypes;
 import com.jetbrains.php.lang.documentation.phpdoc.psi.PhpDocComment;
 import com.jetbrains.php.lang.documentation.phpdoc.psi.tags.PhpDocTag;
-import com.jetbrains.php.lang.parser.PhpStubElementTypes;
+import com.jetbrains.php.lang.psi.elements.PhpDefine;
+import com.jetbrains.php.lang.psi.resolve.types.PhpType;
 import com.jetbrains.php.lang.psi.PhpFile;
 import com.jetbrains.php.lang.psi.PhpPsiElementFactory;
 import com.jetbrains.php.lang.psi.PhpPsiUtil;
@@ -20,8 +21,7 @@ import com.jetbrains.php.lang.psi.elements.*;
 import de.espend.idea.php.annotation.dict.PhpDocCommentAnnotation;
 import de.espend.idea.php.annotation.doctrine.util.DoctrineUtil;
 import org.apache.commons.lang3.StringUtils;
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
+import org.jspecify.annotations.Nullable;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -34,7 +34,7 @@ import java.util.stream.Collectors;
  */
 public class PhpDocUtil {
 
-    public static void addPropertyOrmDocs(@NotNull Field forElement, @NotNull Document document, @NotNull PsiFile file) {
+    public static void addPropertyOrmDocs(Field forElement, Document document, PsiFile file) {
         PsiElement beforeElement = getBeforeElement(forElement);
         if (beforeElement == null) {
             return;
@@ -42,7 +42,8 @@ public class PhpDocUtil {
 
         String fieldName = forElement.getName();
         String defaultType = DoctrineUtil.guessFieldType(forElement);
-        boolean isNullable = forElement.getType().isNullable();
+        // TODO consulo-php: PhpType#isNullable() missing
+        boolean isNullable = forElement.getType().getTypes().contains(PhpType._NULL);
 
         if (AnnotationUtil.useAttributeForGenerateDoctrineMetadata(file))  {
             String arguments = "type: '" + defaultType + "'";
@@ -91,7 +92,7 @@ public class PhpDocUtil {
         }
     }
 
-    public static void addClassOrmDocs(@NotNull PhpClass forElement, @NotNull Document document, @NotNull PsiFile file)
+    public static void addClassOrmDocs(PhpClass forElement, Document document, PsiFile file)
     {
         String entityName = forElement.getPresentableFQN() + "Repository";
         PhpClass phpClass = PhpElementsUtil.getClass(forElement.getProject(), entityName);
@@ -129,7 +130,7 @@ public class PhpDocUtil {
         }
      }
 
-    public static void addClassEmbeddedDocs(@NotNull PhpClass forElement, @NotNull Document document, @NotNull PsiFile file)
+    public static void addClassEmbeddedDocs(PhpClass forElement, Document document, PsiFile file)
     {
         if (AnnotationUtil.useAttributeForGenerateDoctrineMetadata(file)) {
             addAttribute(document, forElement, forElement, "\\Doctrine\\ORM\\Mapping\\Embeddable", null);
@@ -138,7 +139,7 @@ public class PhpDocUtil {
         }
     }
 
-    private static void addAttribute(@NotNull Document document, @NotNull PhpNamedElement forElement, @NotNull PsiElement beforeElement, @NotNull String annotationClass, @Nullable String p)
+    private static void addAttribute(Document document, PhpNamedElement forElement, PsiElement beforeElement, String annotationClass, @Nullable String p)
     {
         String phpDocTagName = getQualifiedName(forElement, annotationClass);
         if(phpDocTagName == null) {
@@ -147,6 +148,10 @@ public class PhpDocUtil {
 
         PhpAttributesList phpPsiFromText = PhpPsiElementFactory.createAttributesList(forElement.getProject(), phpDocTagName + (p != null ? "(" + p + ")" : ""));
         PsiElement parent = beforeElement.getParent();
+        if (parent == null) {
+            return;
+        }
+
         parent.addBefore(phpPsiFromText, beforeElement);
 
         PsiDocumentManager.getInstance(forElement.getProject()).doPostponedOperationsAndUnblockDocument(document);
@@ -161,11 +166,15 @@ public class PhpDocUtil {
             // on attribute scope: private $foo;
             PhpClassFieldsList f = PsiTreeUtil.getParentOfType(forElement, PhpClassFieldsList.class);
             PhpAttributesList childOfType = PsiTreeUtil.findChildOfType(f, PhpAttributesList.class);
+            if (f == null || childOfType == null) {
+                return;
+            }
+
             CodeStyleManager.getInstance(forElement.getProject()).reformatNewlyAddedElement(f.getNode(), childOfType.getNode());
         }
     }
 
-    private static void addPhpDocTag(@NotNull PhpNamedElement forElement, @NotNull Document document, @NotNull PsiFile file, @NotNull  PsiElement beforeElement, @NotNull String annotationClass, @Nullable String tagParameter) {
+    private static void addPhpDocTag(PhpNamedElement forElement, Document document, PsiFile file,  PsiElement beforeElement, String annotationClass, @Nullable String tagParameter) {
 
         String phpDocTagName = getQualifiedName(forElement, annotationClass);
         if(phpDocTagName == null) {
@@ -187,6 +196,10 @@ public class PhpDocUtil {
             }
 
             PsiElement fromText = PhpPsiElementFactory.createFromText(forElement.getProject(), PhpDocTokenTypes.DOC_LEADING_ASTERISK, "/** \n * @var */");
+            if (fromText == null) {
+                return;
+            }
+
             docComment.addBefore(fromText, docComment.getLastChild());
             docComment.addBefore(elementToInsert, docComment.getLastChild());
 
@@ -203,14 +216,19 @@ public class PhpDocUtil {
         }
 
         PsiElement parent = beforeElement.getParent();
+        if (parent == null) {
+            return;
+        }
+
         int atOffset = beforeElement.getTextRange().getStartOffset() + 1;
         parent.addBefore(docComment, beforeElement);
         PsiDocumentManager.getInstance(forElement.getProject()).doPostponedOperationsAndUnblockDocument(document);
         PsiElement atElement = file.findElementAt(atOffset);
         if (atElement != null)            {
             PsiElement docParent = PsiTreeUtil.findFirstParent(atElement, true, element -> ((element instanceof PhpDocComment)) || ((element instanceof PhpFile)));
-            if ((docParent instanceof PhpDocComment)) {
-                CodeStyleManager.getInstance(forElement.getProject()).reformatNewlyAddedElement(docParent.getParent().getNode(), docParent.getNode());
+            PsiElement docParentParent = docParent instanceof PhpDocComment ? docParent.getParent() : null;
+            if (docParent != null && docParentParent != null) {
+                CodeStyleManager.getInstance(forElement.getProject()).reformatNewlyAddedElement(docParentParent.getNode(), docParent.getNode());
             }
         }
 
@@ -223,7 +241,7 @@ public class PhpDocUtil {
      * Get class path on "use" path statement
      */
     @Nullable
-    public static String getQualifiedName(@NotNull PsiElement psiElement, @NotNull String fqn) {
+    public static String getQualifiedName(PsiElement psiElement, String fqn) {
 
         PhpPsiElement scopeForUseOperator = PhpCodeInsightUtil.findScopeForUseOperator(psiElement);
         if (scopeForUseOperator == null) {
@@ -245,11 +263,12 @@ public class PhpDocUtil {
     }
 
     @Nullable
-    private static PsiElement getBeforeElement(@NotNull PsiElement element)
+    private static PsiElement getBeforeElement(PsiElement element)
     {
         PsiElement parent = element.getParent();
 
-        if (((element instanceof Field)) || (element.getNode().getElementType() == PhpStubElementTypes.DEFINE)) {
+        // TODO consulo-php: PhpStubElementTypes.DEFINE missing; PhpDefine PSI check used instead
+        if (((element instanceof Field)) || (element instanceof PhpDefine)) {
             return parent;
         }
 
@@ -260,7 +279,7 @@ public class PhpDocUtil {
      * Workaround for STATIC node element: @Foo(foo::bar) and @Foo(name={foo::bar});
      * see: WI-32801
      */
-    public static boolean isDocStaticElement(@NotNull PsiElement psiElement) {
+    public static boolean isDocStaticElement(PsiElement psiElement) {
         return PhpPsiUtil.isOfType(psiElement, PhpDocTokenTypes.DOC_STATIC) ||
             (PhpPsiUtil.isOfType(psiElement, PhpDocTokenTypes.DOC_TEXT) && "::".equals(psiElement.getText()));
     }
@@ -269,7 +288,7 @@ public class PhpDocUtil {
      * Extract namespace+class @DateTime(Foo\Ker<caret>nel::VERSION)
      */
     @Nullable
-    public static String getNamespaceForDocIdentifier(@NotNull PsiElement psiElement) {
+    public static String getNamespaceForDocIdentifier(PsiElement psiElement) {
         if(psiElement.getNode().getElementType() != PhpDocTokenTypes.DOC_IDENTIFIER) {
             return null;
         }
@@ -293,7 +312,7 @@ public class PhpDocUtil {
      * Extract namespace+class @DateTime(F<caret>oo\Kernel::VERSION) => "F<caret>oo\Kerne"
      */
     @Nullable
-    public static String getNamespaceForDocIdentifierAtStart(@NotNull PsiElement psiElement) {
+    public static String getNamespaceForDocIdentifierAtStart(PsiElement psiElement) {
         if(psiElement.getNode().getElementType() != PhpDocTokenTypes.DOC_IDENTIFIER) {
             return null;
         }
@@ -328,7 +347,7 @@ public class PhpDocUtil {
     /**
      * Starting right and search left until we find a stopping char "Foo\Ke<caret>rnel::VERSION" => "Foo\Kernel"
      */
-    private static boolean isValidClassText(@NotNull PsiElement psiElement) {
+    private static boolean isValidClassText(PsiElement psiElement) {
         IElementType elementType = psiElement.getNode().getElementType();
         if(elementType == PhpDocTokenTypes.DOC_NAMESPACE) {
             return true;
@@ -351,14 +370,14 @@ public class PhpDocUtil {
     /**
      * Starting left and search right until we find a stopping on the left like "static" element "F<caret>oo\Kernel::VERSION" => "Foo\Kernel"
      */
-    private static boolean isValidClassTextReverse(@NotNull PsiElement psiElement) {
+    private static boolean isValidClassTextReverse(PsiElement psiElement) {
         return psiElement.getNode().getElementType() != PhpDocTokenTypes.DOC_STATIC && isValidClassText(psiElement);
     }
 
     /**
      * Extract namespace+class @DateTime(F<caret>oo\Kernel::VERSION) => "F<caret>oo\Kernel"
      */
-    public static boolean isFirstIdentifierInNamespace(@NotNull PsiElement psiElement) {
+    public static boolean isFirstIdentifierInNamespace(PsiElement psiElement) {
         PsiElement prevSibling = psiElement.getPrevSibling();
         if (prevSibling == null) {
             return true;

@@ -1,8 +1,7 @@
 package de.espend.idea.php.annotation.dict;
 
 import com.jetbrains.php.lang.documentation.phpdoc.psi.PhpDocComment;
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
+import org.jspecify.annotations.Nullable;
 
 import java.util.Map;
 
@@ -37,12 +36,10 @@ public class PhpDocCommentAnnotation {
         return null;
     }
 
-    @NotNull
     public PhpDocComment getPhpDocComment() {
         return phpDocComment;
     }
 
-    @NotNull
     public Map<String, PhpDocTagAnnotation> getAnnotationReferences() {
         return annotationReferences;
     }

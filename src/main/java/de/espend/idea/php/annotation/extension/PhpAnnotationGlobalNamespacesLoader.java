@@ -1,14 +1,15 @@
 package de.espend.idea.php.annotation.extension;
 
+import consulo.annotation.component.ComponentScope;
+import consulo.annotation.component.ExtensionAPI;
 import de.espend.idea.php.annotation.extension.parameter.AnnotationGlobalNamespacesLoaderParameter;
-import org.jetbrains.annotations.NotNull;
 
 import java.util.Collection;
 
 /**
  * @author Daniel Espendiller <daniel@espendiller.net>
  */
+@ExtensionAPI(ComponentScope.APPLICATION)
 public interface PhpAnnotationGlobalNamespacesLoader {
-    @NotNull
-    Collection<String> getGlobalNamespaces(@NotNull AnnotationGlobalNamespacesLoaderParameter parameter);
+    Collection<String> getGlobalNamespaces(AnnotationGlobalNamespacesLoaderParameter parameter);
 }

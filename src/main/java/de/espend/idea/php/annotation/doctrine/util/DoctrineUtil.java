@@ -1,14 +1,17 @@
 package de.espend.idea.php.annotation.doctrine.util;
 
-import com.intellij.codeInsight.lookup.LookupElement;
-import com.intellij.codeInsight.lookup.LookupElementBuilder;
-import com.intellij.openapi.project.Project;
-import com.intellij.openapi.util.Key;
-import com.intellij.openapi.util.ModificationTracker;
-import com.intellij.psi.PsiElement;
-import com.intellij.psi.util.*;
-import com.intellij.util.indexing.FileBasedIndex;
-import com.intellij.util.indexing.ID;
+import consulo.language.psi.stub.StubIndexKey;
+import consulo.language.editor.completion.lookup.LookupElement;
+import consulo.language.editor.completion.lookup.LookupElementBuilder;
+import consulo.project.Project;
+import consulo.util.dataholder.Key;
+import consulo.component.util.ModificationTracker;
+import consulo.language.psi.PsiElement;
+import consulo.application.util.*;
+import consulo.language.psi.util.*;
+import consulo.language.psi.PsiModificationTracker;
+import consulo.language.psi.stub.FileBasedIndex;
+import consulo.index.io.ID;
 import com.jetbrains.php.PhpIndex;
 import com.jetbrains.php.codeInsight.PhpCodeInsightUtil;
 import com.jetbrains.php.lang.PhpLangUtil;
@@ -17,15 +20,14 @@ import com.jetbrains.php.lang.documentation.phpdoc.psi.tags.PhpDocTag;
 import com.jetbrains.php.lang.psi.elements.*;
 import com.jetbrains.php.lang.psi.resolve.types.PhpType;
 import com.jetbrains.php.lang.psi.stubs.indexes.PhpClassNameIndex;
-import de.espend.idea.php.annotation.PhpAnnotationIcons;
+import de.espend.idea.php.annotation.icon.PhpAnnotationIconGroup;
 import de.espend.idea.php.annotation.dict.PhpDocCommentAnnotation;
 import de.espend.idea.php.annotation.dict.PhpDocTagAnnotation;
 import de.espend.idea.php.annotation.util.AnnotationUtil;
 import de.espend.idea.php.annotation.util.PhpDocUtil;
 import de.espend.idea.php.annotation.util.PhpElementsUtil;
 import org.apache.commons.lang3.StringUtils;
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
+import org.jspecify.annotations.Nullable;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -48,7 +50,7 @@ public class DoctrineUtil {
     private static final Key<CachedValue<Map<String, Set<String>>>> ANNOTATIONS_TARGETS_CACHE = new Key<>("ANNOTATIONS_TARGETS_CACHE");
     private static final Key<CachedValue<Boolean>> IS_DOCTRINE_PROJECT_CACHE = new Key<>("ANNOTATIONS_DOCTRINE_PROJECT");
 
-    public static String guessFieldType(@NotNull Field field) {
+    public static String guessFieldType(Field field) {
         String fieldName = field.getName();
 
         // match the the fields name wins
@@ -99,7 +101,7 @@ public class DoctrineUtil {
         return "string";
     }
 
-    public static boolean isOrmColumnProperty(@NotNull Field field) {
+    public static boolean isOrmColumnProperty(Field field) {
         PhpDocComment docComment = field.getDocComment();
         if(docComment != null) {
             PhpDocCommentAnnotation container = AnnotationUtil.getPhpDocCommentAnnotationContainer(docComment);
@@ -113,7 +115,7 @@ public class DoctrineUtil {
     }
 
     @Nullable
-    public static PhpDocTagAnnotation getOrmEntityPhpDocBlock(@NotNull PhpClass phpClass) {
+    public static PhpDocTagAnnotation getOrmEntityPhpDocBlock(PhpClass phpClass) {
         PhpDocComment docComment = phpClass.getDocComment();
         if(docComment == null) {
             return null;
@@ -131,7 +133,7 @@ public class DoctrineUtil {
         return org.apache.commons.lang3.StringUtils.capitalize(camelCasedWord).replaceAll("([a-z])([A-Z])", "$1_$2").toLowerCase();
     }
 
-    public static boolean isDoctrineOrmInVendor(@NotNull Project project)
+    public static boolean isDoctrineOrmInVendor(Project project)
     {
         return CachedValuesManager.getManager(project).getCachedValue(
             project,
@@ -146,7 +148,7 @@ public class DoctrineUtil {
         );
     }
 
-    public static String trimBlackSlashes(@NotNull String namespaceName) {
+    public static String trimBlackSlashes(String namespaceName) {
 
         if(namespaceName.startsWith("\\")) {
             namespaceName = namespaceName.substring(1);
@@ -159,7 +161,7 @@ public class DoctrineUtil {
         return namespaceName;
     }
 
-    public static void visitCustomTypes(@NotNull Project project, @NotNull ColumnTypeVisitor visitor) {
+    public static void visitCustomTypes(Project project, ColumnTypeVisitor visitor) {
         Set<String> found = new HashSet<>();
 
         Collection<PhpClass> phpClasses = new ArrayList<>();
@@ -200,15 +202,14 @@ public class DoctrineUtil {
     }
 
     public interface ColumnTypeVisitor {
-        void visit(@NotNull String name, @Nullable PhpClass phpClass, @Nullable PsiElement psiElement);
+        void visit(String name, @Nullable PhpClass phpClass, @Nullable PsiElement psiElement);
     }
 
-    @NotNull
-    public static Collection<LookupElement> getTypes(@NotNull Project project) {
+    public static Collection<LookupElement> getTypes(Project project) {
         final Collection<LookupElement> lookupElements = new ArrayList<>();
 
         for (Map.Entry<String, Set<String>> entry : getColumnTypes(project).entrySet()) {
-            LookupElementBuilder lookupElementBuilder = LookupElementBuilder.create(entry.getKey()).withIcon(PhpAnnotationIcons.DOCTRINE);
+            LookupElementBuilder lookupElementBuilder = LookupElementBuilder.create(entry.getKey()).withIcon(PhpAnnotationIconGroup.doctrine());
 
             for (String clazz : entry.getValue()) {
                 PhpClass phpClass = PhpElementsUtil.getClassInterface(project, clazz);
@@ -227,8 +228,7 @@ public class DoctrineUtil {
         return lookupElements;
     }
 
-    @NotNull
-    public static Collection<PhpClass> getColumnTypesTargets(@NotNull Project project, final @NotNull String contents) {
+    public static Collection<PhpClass> getColumnTypesTargets(Project project, final String contents) {
         Set<String> strings = getColumnTypes(project).get(contents);
         if (strings == null) {
             return Collections.emptyList();
@@ -240,8 +240,7 @@ public class DoctrineUtil {
             .collect(Collectors.toList());
     }
 
-    @NotNull
-    private static Map<String, Set<String>> getColumnTypes(@NotNull Project project) {
+    private static Map<String, Set<String>> getColumnTypes(Project project) {
         return CachedValuesManager.getManager(project).getCachedValue(
             project,
             ANNOTATIONS_TARGETS_CACHE,
@@ -269,7 +268,7 @@ public class DoctrineUtil {
         );
     }
 
-    public static void importOrmUseAliasIfNotExists(@NotNull PhpClassMember field) {
+    public static void importOrmUseAliasIfNotExists(PhpClassMember field) {
 
         // check for already imported class aliases
         String qualifiedName = PhpDocUtil.getQualifiedName(field, DOCTRINE_ORM_MAPPING);
@@ -292,7 +291,7 @@ public class DoctrineUtil {
         PhpElementsUtil.insertUseIfNecessary(scopeForUseOperator, DOCTRINE_ORM_MAPPING, "ORM");
     }
 
-    public static boolean hasCreateRepositoryClassSupport(@NotNull PhpClass phpClass)
+    public static boolean hasCreateRepositoryClassSupport(PhpClass phpClass)
     {
         PhpDocComment docComment = phpClass.getDocComment();
         if(docComment != null) {
@@ -306,7 +305,7 @@ public class DoctrineUtil {
             }
         }
 
-        Collection<@NotNull PhpAttribute> attributes = phpClass.getAttributes("\\Doctrine\\ORM\\Mapping\\Entity");
+        Collection<PhpAttribute> attributes = phpClass.getAttributes("\\Doctrine\\ORM\\Mapping\\Entity");
         if (attributes.isEmpty()) {
             return false;
         }
@@ -355,7 +354,11 @@ public class DoctrineUtil {
         return repoPhpClass != null;
     }
 
-    private static ModificationTracker getModificationTrackerForIndexId(@NotNull Project project, @NotNull final ID<?, ?> id) {
+    private static ModificationTracker getModificationTrackerForIndexId(Project project, final ID<?, ?> id) {
+        if (id instanceof StubIndexKey) {
+            // stub indexes have no stamp in FileBasedIndex
+            return PsiModificationTracker.getInstance(project);
+        }
         return () -> FileBasedIndex.getInstance().getIndexModificationStamp(id, project);
     }
 }
